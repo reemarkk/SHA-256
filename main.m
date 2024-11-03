@@ -7,7 +7,8 @@ uint32_t ROTLEFT(uint32_t a, uint32_t b){
     return (((a) << (b)) | ((a) >> (32-(b))));
 }
 uint32_t ROTRIGHT(uint32_t a,uint32_t b) {
-    return (((a) >> (b)) | ((a) << (32-(b))));}
+    return (((a) >> (b)) | ((a) << (32-(b))));
+}    
 uint32_t CH(uint32_t x, uint32_t y, uint32_t z){
     return (((x) & (y)) ^ (~(x) & (z)));
 }
@@ -66,10 +67,11 @@ void sha256_transform(SHA256 *ctx, const BYTE data[]) {
         0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
     };
 
-    for (i = 0, j = 0; i < 16; ++i, j += 4)
-        m[i] = (data[j] << 24) | (data[j + 1] << 16) | (data[j + 2] << 8) | (data[j + 3]);
-    for (; i < 64; ++i)
-        m[i] = SIGMA1(m[i - 2]) + m[i - 7] + SIGMA0(m[i - 15]) + m[i - 16];
+    for (i = 0, j = 0; i < 16; ++i, j += 4){
+        m[i] = (data[j] << 24) | (data[j + 1] << 16) | (data[j + 2] << 8) | (data[j + 3]);}
+        
+    for (; i < 64; ++i){
+        m[i] = SIGMA1(m[i - 2]) + m[i - 7] + SIGMA0(m[i - 15]) + m[i - 16];}
 
     a = ctx->state[0];
     b = ctx->state[1];
@@ -83,6 +85,7 @@ void sha256_transform(SHA256 *ctx, const BYTE data[]) {
     for (i = 0; i < 64; ++i) {
         t1 = h + EP1(e) + CH(e, f, g) + k[i] + m[i];
         t2 = EP0(a) + MAJ(a, b, c);
+        
         h = g;
         g = f;
         f = e;
@@ -106,6 +109,7 @@ void sha256_transform(SHA256 *ctx, const BYTE data[]) {
 void sha256_init(SHA256 *ctx) {
     ctx->datalen = 0;
     ctx->bitlen = 0;
+    
     ctx->state[0] = 0x6a09e667;
     ctx->state[1] = 0xbb67ae85;
     ctx->state[2] = 0x3c6ef372;
