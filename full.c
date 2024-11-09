@@ -1,44 +1,47 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-     
-uint32_t ROTLEFT(uint32_t a, uint32_t b){
-    return (((a) << (b)) | ((a) >> (32-(b))));
+
+typedef unsigned char BYTE;             // 8-bit byte
+typedef unsigned int WORD;              // 32-bit word
+typedef char SHA256_HASH[32];           // 256-bit hash (32 bytes)
+
+// SHA-256 Functions 
+uint32_t ROTLEFT(uint32_t a, uint32_t b) {
+    return (((a) << (b)) | ((a) >> (32 - (b))));
 }
 
-uint32_t ROTRIGHT(uint32_t a,uint32_t b) {
-    return (((a) >> (b)) | ((a) << (32-(b))));
+uint32_t ROTRIGHT(uint32_t a, uint32_t b) {
+    return (((a) >> (b)) | ((a) << (32 - (b))));
 }
 
-uint32_t CH(uint32_t x, uint32_t y, uint32_t z){
+uint32_t CH(uint32_t x, uint32_t y, uint32_t z) {
     return (((x) & (y)) ^ (~(x) & (z)));
 }
 
-uint32_t MAJ(uint32_t x, uint32_t y, uint32_t z){
+uint32_t MAJ(uint32_t x, uint32_t y, uint32_t z) {
     return (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)));
 }
 
-uint32_t EP0(uint32_t x){
-    return (ROTRIGHT(x,2) ^ ROTRIGHT(x,13) ^ ROTRIGHT(x,22));
+uint32_t EP0(uint32_t x) {
+    return (ROTRIGHT(x, 2) ^ ROTRIGHT(x, 13) ^ ROTRIGHT(x, 22));
 }
 
-uint32_t EP1(uint32_t x){
-    return (ROTRIGHT(x,6) ^ ROTRIGHT(x,11) ^ ROTRIGHT(x,25));
+uint32_t EP1(uint32_t x) {
+    return (ROTRIGHT(x, 6) ^ ROTRIGHT(x, 11) ^ ROTRIGHT(x, 25));
 }
 
-uint32_t SIGMA0(uint32_t x){
-    return (ROTRIGHT(x,7) ^ ROTRIGHT(x,18) ^ ((x) >> 3));
+uint32_t SIGMA0(uint32_t x) {
+    return (ROTRIGHT(x, 7) ^ ROTRIGHT(x, 18) ^ ((x) >> 3));
 }
 
 uint32_t SIGMA1(uint32_t x) {
-    return (ROTRIGHT(x,17) ^ ROTRIGHT(x,19) ^ ((x) >> 10));
+    return (ROTRIGHT(x, 17) ^ ROTRIGHT(x, 19) ^ ((x) >> 10));
 }
 
-
-typedef unsigned char BYTE;             // 8-bit byte
-typedef unsigned int  WORD;             // 32-bit word
-
+// SHA256 context structure
 typedef struct {
     BYTE data[64];
     WORD datalen;
@@ -46,16 +49,9 @@ typedef struct {
     WORD state[8];
 } SHA256;
 
-
-void sha256_init(SHA256 *ctx);
-void sha256_update(SHA256 *ctx, const BYTE data[], size_t len);
-void sha256_final(SHA256 *ctx, BYTE hash[]);
-void sha256_transform(SHA256 *ctx, const BYTE data[]);
-
-
-void sha256_transform(SHA256 *ctx, const BYTE data[]) {
+// SHA-256 transformation function
+void sha256_transform(SHA256* ctx, const BYTE data[]) {
     WORD a, b, c, d, e, f, g, h, i, j, t1, t2, m[64];
-    
     static const WORD k[64] = {
         0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
         0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -75,12 +71,14 @@ void sha256_transform(SHA256 *ctx, const BYTE data[]) {
         0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
     };
 
+    // Prepare message schedule
     for (i = 0, j = 0; i < 16; ++i, j += 4)
         m[i] = (data[j] << 24) | (data[j + 1] << 16) | (data[j + 2] << 8) | (data[j + 3]);
-    
+
     for (; i < 64; ++i)
         m[i] = SIGMA1(m[i - 2]) + m[i - 7] + SIGMA0(m[i - 15]) + m[i - 16];
 
+    // Initialize working variables
     a = ctx->state[0];
     b = ctx->state[1];
     c = ctx->state[2];
@@ -90,6 +88,7 @@ void sha256_transform(SHA256 *ctx, const BYTE data[]) {
     g = ctx->state[6];
     h = ctx->state[7];
 
+    // Main loop
     for (i = 0; i < 64; ++i) {
         t1 = h + EP1(e) + CH(e, f, g) + k[i] + m[i];
         t2 = EP0(a) + MAJ(a, b, c);
@@ -103,6 +102,7 @@ void sha256_transform(SHA256 *ctx, const BYTE data[]) {
         a = t1 + t2;
     }
 
+    // Update state
     ctx->state[0] += a;
     ctx->state[1] += b;
     ctx->state[2] += c;
@@ -113,10 +113,11 @@ void sha256_transform(SHA256 *ctx, const BYTE data[]) {
     ctx->state[7] += h;
 }
 
-void sha256_init(SHA256 *ctx) {
+// SHA256 initialization
+void sha256_init(SHA256* ctx) {
     ctx->datalen = 0;
     ctx->bitlen = 0;
-    
+
     ctx->state[0] = 0x6a09e667;
     ctx->state[1] = 0xbb67ae85;
     ctx->state[2] = 0x3c6ef372;
@@ -127,7 +128,8 @@ void sha256_init(SHA256 *ctx) {
     ctx->state[7] = 0x5be0cd19;
 }
 
-void sha256_update(SHA256 *ctx, const BYTE data[], size_t len) {
+// SHA256 update
+void sha256_update(SHA256* ctx, const BYTE data[], size_t len) {
     WORD i;
 
     for (i = 0; i < len; ++i) {
@@ -141,23 +143,24 @@ void sha256_update(SHA256 *ctx, const BYTE data[], size_t len) {
     }
 }
 
-void sha256_final(SHA256 *ctx, BYTE hash[]) {
+// SHA256 finalization
+void sha256_final(SHA256* ctx, BYTE hash[]) {
     WORD i;
     i = ctx->datalen;
 
-    // Pad whatever data is left in the buffer.
+    // Pad remaining data
     if (ctx->datalen < 56) {
         ctx->data[i++] = 0x80;
         while (i < 56) ctx->data[i++] = 0x00;
     }
-    else{
+    else {
         ctx->data[i++] = 0x80;
         while (i < 64) ctx->data[i++] = 0x00;
         sha256_transform(ctx, ctx->data);
         memset(ctx->data, 0, 56);
     }
 
-    // Append the total message length in bits and transform.
+    // Append length
     ctx->bitlen += ctx->datalen * 8;
     ctx->data[63] = ctx->bitlen;
     ctx->data[62] = ctx->bitlen >> 8;
@@ -167,10 +170,10 @@ void sha256_final(SHA256 *ctx, BYTE hash[]) {
     ctx->data[58] = ctx->bitlen >> 40;
     ctx->data[57] = ctx->bitlen >> 48;
     ctx->data[56] = ctx->bitlen >> 56;
-    
+
     sha256_transform(ctx, ctx->data);
 
-    // Output the final hash in big-endian order.
+    // Store the hash
     for (i = 0; i < 4; ++i) {
         hash[i]      = (ctx->state[0] >> (24 - i * 8)) & 0x000000ff;
         hash[i + 4]  = (ctx->state[1] >> (24 - i * 8)) & 0x000000ff;
@@ -183,38 +186,49 @@ void sha256_final(SHA256 *ctx, BYTE hash[]) {
     }
 }
 
-BYTE* SHA_256(void * data, unsigned long int len)
-{
-        static BYTE hash[32];
-        SHA256 ctx;
-        sha256_init(&ctx);
-        sha256_update(&ctx, (BYTE*)data, len);
-        sha256_final(&ctx, hash);
-        
-        return hash;  // Return the hash array
-    }
+
+void SHA_256(void *data, unsigned long int len, SHA256_HASH hashArray) {
+    SHA256 ctx;
+    BYTE hash[32];
+
+    sha256_init(&ctx);
+    sha256_update(&ctx, (BYTE*)data, len);
+    sha256_final(&ctx, hash);
+
+    // Copy the hash into the provided SHA256_HASH array
+    memcpy(hashArray, hash, 32);
+}
 
 
 int main(void) {
-    char text [10000];
-    
-    printf("%s","Enter text: ");
+    char text[10000];
+    SHA256_HASH hashArray;
+
+   
+    printf("Enter text: ");
     scanf("%[^\n]", text);
-    printf("SHA-256: ");
-    BYTE * HashText = SHA_256(text, strlen(text));
-    for(int i = 0; i < 32; i++){
-        printf("%02x", HashText[i]);
+
+    
+    SHA_256(text, strlen(text), hashArray);
+    printf("SHA-256 (text): ");
+    for (int i = 0; i < 32; i++) {
+        printf("%02x", (unsigned char)hashArray[i]);
     }
     printf("\n");
+
     
     int number;
-    
-    printf("%s","Enter number: ");
+    printf("Enter number: ");
     scanf("%d", &number);
-    printf("SHA-256: ");
-    BYTE * HashInt = SHA_256(&number, sizeof(number));
-    for(int i = 0; i < 32; i++){
-        printf("%02x", HashInt[i]);
+
+
+    SHA_256(&number, sizeof(number), hashArray);
+    printf("SHA-256 (number): ");
+    for (int i = 0; i < 32; i++) {
+        printf("%02x", (unsigned char)hashArray[i]);
     }
     printf("\n");
+
+    return 0;
 }
+
